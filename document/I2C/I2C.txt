@@ -1,0 +1,99 @@
+*)giới thiệu về giao tiếp I2C.
+		SDA <-> SDA
+		SCL  -> SCL
+  trong đó: SDA đường truyền cho master và slave để gửi và nhận dữ liệu.
+            SCL đường mang tín hiệu xung nhịp(khi có xung thì mới có thể truyền or nhận dữ liệu, xác định tốc độ truyền dữ liệu).
+  I2C là sự kết hợp tốt nhất của SPI và UART.
+  giống như UART thì I2C chỉ sử dụng 2 dây để truyền dữ liệu.
+  giống như SPI thì I2C là đồng bộ, do đầu ra của các bit được đồng bộ hóa với việc lấy mẫu các bit bởi 1 tín hiệu xung được chia sẻ giữa master và slave. Tín hiệu xung nhịp luôn được điều khiển bởi master.
+
+*) các hàm cần thiết cho giao tiếp I2C:
+- I2C_GeneratesSTART(I2C_Chanel, ENABLE): hàm này tạo tín hiệu START trên kênh I2C, được gửi để báo hiệu bắt đầu một phiên giao tiếp mới giữa master và slave.
+
+- I2C_CheckEvent(I2C_Chanel,I2C_EVENT_MASTER_MODE_SELECT): hàm này kiểm tra xem sự kiện *I2C_EVENT_MASTER_MODE_SELECT đã được chọn thành công hay chưa, đảm bảo rằng vi điều khiển đang ở chế độ master trước khi gửi dữ liệu.
+- I2C_Send7bitAddress(I2C_Chanel, DEVICE_ADDR, I2C_Direction_Transmitter): lệnh này để xác nhận địa chỉ với thiết bị ngoại vi, chỉ khi thiết bị có cùng địa chỉ DEVICE_ADDR thì mới gửi được tín hiệu(I2C_Direction_Transmitter biến này chỉ định rằng thiết bị master sẽ gửi dữ liệu đến thiết bị slave).
+
+- I2C_CheckEvent(I2C_Chanel, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED): hàm này kiểm tra sự kiện *I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED sự kiện xác nhận rằng master đã chuyển sang chế độ transmitter và slave đã sẵn sàng nhận dữ liệu từ master(nếu slave phản hồi với tín hiệu ACK sự kiện này sẽ được kích hoạt).
+
+- I2C_SendData(I2C_Chanel, data): lệnh này gửi byte dữ liệu *data đến slave.
+
+- I2C_CheckEvent(I2C_Chanel, I2C_EVENT_MASTER_BYTE_TRANSMITTED): kiểm tra byte dữ liệu đã gửi thành công hay chưa.
+
+- I2C_GeneratesSTOP(I2C_Chanel, ENABLE): lệnh này tạo tín hiệu STOP để kết thúc phiên giao tiếp I2C.
+
+*) các thanh ghi quan trọng.
+- I2C_CR1 (I2C control register 1): 
+	ACK  (bit 10): cho phép nhận hoặc không nhận tín hiệu ACK return từ thiết bị được truyền.
+ 	STOP (bit 9) : sinh ra tín hiệu stop kết thúc quá trình giao tiếp.
+	START(bit 8) : sinh ra tín hiệu để bắt đầu quá trình giao tiếp.
+	PE   (bit 0) : được bật lên bằng 1 khi quá trình giao tiếp I2C đang được thực hiện và 0 khi có tín hiệu end communication.
+
+- I2C_CR2:
+	ITBUFEN (bit 10): cho phép tạo ra ngắt khi thanh ghi dữ liệu được truyền hoặc nhận dữ liệu.
+	ITEVTEN (bit 9) : cho phép ngắt khi xảy ra các sự kiện sau trên các bit sau SB, ADDR, ADD10, STOPF, BTF, TxE, RxE.
+	ITERREN (bit 8) : cho phép ngắt khi có lỗi xảy ra.
+
+- I2C_OAR1 (own address):
+	ADDMODE (bit 15): cài đặt bit địa chỉ của slave là 7 hay 10 bit.
+	ADD    [bit 9:8]: chỉ sử dụng khi mode địa chỉ là 10 bit.
+	ADD    [bit 7:1]: bit địa chỉ của thiết bị slave.
+	ADD0   (bit 0)  : chỉ sử dụng khi bit địa là 10 bit.
+
+- I2C_DR (data register): thanh ghi này gồm 8 bit, chứa data của quá trình truyền hoặc nhận.
+
+- I2C_SR1 (status register): thanh ghi này chứa các cờ báo trạng thái của quá trình giao tiếp I2C.
+	TIME OUT (bit 14): báo hết thời gian đợi quá trình truyền nhận data.
+	PECERR   (bit 12): kiểm tra lỗi PEC(là một byte kiểm tra lỗi được thêm vào cuối của một khung truyền I2C). Bit này sẽ được set khi giá trị PEC nhận được từ slave không khớp với giá trị PEC được tính toán bởi master. Chức năng đảm bảo tính trọn vẹn của dữ liệu.
+	OVR      (bit 11): báo quá trình overrun/ underrun.
+			overrun xảy ra khi dữ liệu mới truyền đến mà dữ liệu cũ chưa kịp xử lí, sẽ bị ghi đè bởi dữ liệu mới. Nguyên nhân thường là do CPU không xử lí dữ liệu đủ nhanh hoặc bộ đệm quá nhỏ.
+			underrung xảy ra khi hệ thống cố gắng truyền dữ liệu nhưng không có dữ liệu sẵn sàng trong bộ đệm để gửi, dẫn đến việc truyền dữ liệu không đầy đủ hoặc dữ liệu không hợp lệ. Nguyên nhân khi bộ đệm không được nạp đủ nhanh.
+	AF       (bit 10): báo tín hiệu ACK bị lỗi hay không.
+	TxE	  (bit 7): báo buffer truyền có trống hay không.
+	RxE	  (bit 6): báo buffer nhận có trống hay không 
+	STOPF	  (bit 4): bit này được thiết khi một điều kiện STOP được phát hiện.
+	BTF	  (bit 2): báo truyền byte dữ liệu đã xong hay chưa.
+	ADDR	  (bit 1): báo địa chỉ đã được gửi hay không tương thích.
+	SB	  (bit 0): bit này được thiết lập khi phát hiện một điều kiện START.
+
+- I2C_CCR (clock control register): chọn tốc độ truyền dữ liệu.
+
+*)config i2c.
+- code:
+void I2C_config(void)
+{
+	//config clock
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, ENABLE);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
+
+	//config gpio
+	GPIO_InitTypeDef  GPIO_InitStructure; 
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10 | GPIO_Pin_11;
+        GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
+	
+	//config i2c
+	I2C_InitTypeDef I2C_InitStructure;
+	I2C_InitStructure.I2C_DutyCycle = I2C_DutyCycle_2;
+	I2C_InitStructure.I2C_OwnAddress1 = 0;
+	I2C_InitStructure.I2C_Ack = I2C_AcknowledgedAddress_7bit;
+	I2C_InitStructure.I2C_ClockSpeed = 100000;
+	I2C_Init(I2C2, &I2C_InitStructure);
+	//allow set i2c activity
+	I2C_Cmd(I2C2, ENABLE);
+	
+}
+- giải thích 
+  I2C_InitStructure.I2C_DutyCycle = I2C_DutyCycle_2; thiết lập chu kỳ làm việc của xung clock SCL trong chế độ Fast Mode. *I2C_DutyCycle_2 tỷ lệ chu kì làm việc là 2 (50%) nghĩa là thời gian SCL ở mức cao bằng thời gian SCL ở mức thấp.
+
+  I2C_InitStructure.I2C_OwnAddress1 = 0; thiết lập địa chỉ cho vi điều khiển khi hoạt động ở chế độ slave. Còn ở đây đang là master nên không cần.
+  
+  I2C_InitStructure.I2C_Ack = I2C_AcknowledgedAddress_7bit;
+thiết lập địa chỉ nhận diện của thiết bị I2C là 7-bit.
+
+  I2C_InitStructure.I2C_ClockSpeed = 100000; thiết lập tốc độ xung cho I2C là 100kHz. Đây là tốc độ chuẩn của giao tiếp I2C.
+
+  
+
+
+	

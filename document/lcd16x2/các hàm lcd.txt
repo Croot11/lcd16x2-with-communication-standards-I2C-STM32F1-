@@ -1,0 +1,18 @@
+CÁC HÀM LCD 
+-lcd_enable: tạo xung cho chân EN để lcd nhận lệnh từ vi điều khiển 
+-lcd_send4bit: viết dữ liệu lên các chân 
+-lcd_sendcommand: gửi dữ liệu cho lcd từ 4 bit cao(command >> 4) đến 4 bit thấp kết hợp với hàm *lcd_enable 
+-lcd_clear: để clear màn hình 
+-lcd_init: hàm khởi tạo cho lcd 
+	0x03 khởi động lcd ở chế độ 8 bit trước 
+	0x02 chuyển sang chế độ 4 bit 
+	     note: đây là quá trình tiêu chuẩn khi khởi tạo cho lcd để đảm bảo tính tin cậy 
+	0x28 để cấu hình lcd hoạt động trong chế độ 4 bit, hiển thị 2 dòng và sử dụng front chữ 5x8(5 cột và 8 hàng).
+	0x0C để bật màn hình hiển thị và tắt hiển thị con trỏ(thường là dấu _ nhấp nháy liên tục giúp người dùng có thể nhận biết được mình đang nhập ở chỗ nào)
+	0x06 dùng để tự động tăng địa chỉ bộ nhớ khi ghi 1 kí tự mới và màn hình sẽ không dịch chuyển nội dung hiển thị(nếu bị tắt nội dung sẽ bị dịch chuyển sang trái or phải vd ngoc -> cogn)
+	0x01 dùng để xóa toàn bộ màn hình 
+-lcd_gotoxy: hàm để setup vị trí hàng cột 
+	0x80 buộc con trỏ về cột đầu tiên hàng 1 
+	0xC0 buộc con trở về cột đầu tiên hàng 2
+-lcd_putchar: gửi dữ liệu hiển thị từng các ký tự
+-lcd_puts: sẽ trỏ đến từng các ký tự của 1 chuỗi (với *s lúc này sẽ là các mã ASCII)

@@ -1,0 +1,8 @@
+- EN: kích hoạt(bằng cách chuyển từ mức thấp lên mức cao rồi lại về mức thấp), LCD sẽ nhận lệnh hoặc dữ liệu từ vi điều khiển.
+      Quá trình này yêu cầu 1 xung điều khiển, khi xung này được tạo ra, LCD sẽ đọc giá trị trên các chân dữ liệu.
+
+- RS: RS = 0 thì LCD sẽ hiểu dữ liệu được gửi đến là lệnh điều khiển. 
+      RS = 1 thì LCD sẽ hiểu dữ liệu được gửi đến là dữ liệu hiển thị
+
+- RW: RW = 0 thì LCD ở chế độ ghi, vi điều khiển sẽ gửi lệnh đến LCD
+      RW = 1 thì LCD ở chế độ đọc, vi điều khiển có thể đọc dữ liệu từ LCD, chẳng hạn đọc trạng thái busyflag của LCD để biết nó sẵn sàng nhận lệnh mới hay chưa 
